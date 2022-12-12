@@ -1,4 +1,4 @@
-name: (CI)
+﻿name: (CI)
 
 on:
   workflow_dispatch:
@@ -9,7 +9,9 @@ on:
       - '.FSC-PS/**'
       - 'tests/**'
     branches:
-       - main
+       - "main"
+       - "release"
+
    
 permissions:
   contents: read

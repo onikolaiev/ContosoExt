@@ -1,6 +1,8 @@
-name: (DEPLOY)
+﻿name: (DEPLOY)
 
 on:
+  schedule:
+   - cron: '1 * * * *'
   workflow_dispatch:
    inputs:
       environment:
@@ -9,7 +11,9 @@ on:
         default: ''
         type: choice
         options:
-        - "*"
+         - "*"
+         - "Contoso-QA"
+
 
 permissions:
   contents: read
