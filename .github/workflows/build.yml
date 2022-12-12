@@ -1,4 +1,4 @@
-name: (BUILD)
+﻿name: (BUILD)
 
 on:
   workflow_dispatch:
@@ -10,6 +10,13 @@ on:
         type: choice
         options:
         - "*"
+        - "10.0.26"
+        - "10.0.27"
+        - "10.0.28"
+        - "10.0.29"
+        - "10.0.30"
+        - "10.0.31"
+
 
       includeTestModels:
         type: boolean
