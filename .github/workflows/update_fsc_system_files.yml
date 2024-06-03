@@ -8,12 +8,13 @@ on:
         required: false
         default: ''
       directCommit:
-        description: Direct COMMIT (Y/N)
+        description: Direct COMMIT
         required: false
-        default: 'N'
+        type: boolean
+        default: false
         
 permissions:
-  contents: read
+  contents: write
 
 defaults:
   run:
@@ -31,20 +32,20 @@ jobs:
         run: git config --system core.longpaths true
         
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       - name: Initialize the workflow
-        uses: ciellosinc/FSC-PS-Actions/WorkflowInitialize@v1.1
+        uses: fscpscollaborative/fscps.gh/WorkflowInitialize@v2.1
         id: init
         env:
           secrets: ${{ toJson(secrets) }}    
 
       - name: Read settings
         id: ReadSettings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
 
       - name: Read secrets
-        uses: ciellosinc/FSC-PS-Actions/ReadSecrets@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}    
         with:
@@ -66,13 +67,14 @@ jobs:
           $directCommit = $ENV:directCommit
           Write-Host $ENV:eventName
           if ($ENV:eventName -eq 'schedule') {
-            Write-Host "Running Update System Files on a schedule. Setting DirectCommit = Y"
-            $directCommit = 'Y'
+            Write-Host "Running Update System Files on a schedule. Setting DirectCommit = True"
+            $directCommit = $true
           }
           Add-Content -Path $env:GITHUB_ENV -Value "DirectCommit=$directCommit"
 
       - name: Check for updates to FSC-PS system files
-        uses: ciellosinc/FSC-PS-Actions/CheckForUpdates@v1.1
+        uses: fscpscollaborative/fscps.gh/CheckForUpdates@v2.1
+        continue-on-error: true
         with:
           type: ${{ steps.ReadSettings.outputs.type}}
           token: ${{ secrets.REPO_TOKEN }}
@@ -84,7 +86,7 @@ jobs:
 
       - name: Finalize the workflow
         id: PostProcess
-        uses: ciellosinc/FSC-PS-Actions/WorkflowPostProcess@v1.1
+        uses: fscpscollaborative/fscps.gh/WorkflowPostProcess@v2.1
         with:
           remove_current: ${{ steps.ReadSettings.outputs.EnvironmentsJson == '' }}
           settingsJson: ${{ env.Settings }}
