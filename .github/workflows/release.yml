@@ -1,4 +1,4 @@
-name: (RELEASE)
+﻿name: (RELEASE)
 
 on:
   workflow_dispatch:
@@ -11,18 +11,19 @@ on:
         description: Name of this release (Default is generated package name)
         required: true
         default: ''
-      prerelease:
-        description: Prerelease (Y/N)
-        required: false
-        default: 'N'
-      draft:
-        description: Draft (Y/N)
-        required: false
-        default: 'N'
       createReleaseBranch:
-        description: Create Release Branch (Y/N)
+        description: Create Release Branch
         required: false
-        default: 'N'
+        type: boolean
+        default: false
+      customFileUrl:
+        description: Add custom file to the release. Provide the file download url.
+        required: false
+        default: ''
+      customFileName:
+        description: Custom file name with extension.
+        required: false
+        default: ''
 
 permissions:
   contents: write
@@ -37,7 +38,7 @@ defaults:
 
 jobs:
   Initialization:
-    runs-on: [ windows-latest ]
+    runs-on: [windows-latest]
     outputs:
       type: ${{ steps.ReadSettings.outputs.type }}
       source_branch: ${{ steps.ReadSettings.outputs.source_branch }}
@@ -49,20 +50,21 @@ jobs:
         run: git config --system core.longpaths true
         
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       - name: Initialize the workflow
-        uses: ciellosinc/FSC-PS-Actions/WorkflowInitialize@v1.1
+        uses: fscpscollaborative/fscps.gh/WorkflowInitialize@v2.1
         id: init
         env:
           secrets: ${{ toJson(secrets) }}    
 
       - name: Read settings
         id: ReadSettings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
                 
       - name: Check for updates to FSC-PS system files
-        uses: ciellosinc/FSC-PS-Actions/CheckForUpdates@v1.1
+        uses: fscpscollaborative/fscps.gh/CheckForUpdates@v2.1
+        continue-on-error: true
         with:
           type: ${{ steps.ReadSettings.outputs.type }}
           settingsJson: ${{ env.Settings }}
@@ -75,23 +77,23 @@ jobs:
       artifact_name: ${{ steps.runpipeline.outputs.PACKAGE_NAME }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       - name: Read settings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
           
       - name: Read secrets
-        uses: ciellosinc/FSC-PS-Actions/ReadSecrets@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}    
         with:
           settingsJson: ${{ env.Settings }}
           
       - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Setup NuGet
-        uses: nuget/setup-nuget@v1.1.1
+        uses: nuget/setup-nuget@v2.0.0
         with:
           nuget-version: 5.10.x    
       
@@ -105,12 +107,12 @@ jobs:
           }
           
       - name: Run pipeline
-        uses: ciellosinc/FSC-PS-Actions/RunPipeline@v1.1
+        uses: fscpscollaborative/fscps.gh/RunPipeline@v2.1
         id: runpipeline
         with:
           type: ${{ needs.Initialization.outputs.type}}
           settingsJson: ${{ env.Settings }}
-          SecretsJson: ${{ env.RepoSecrets }}
+          secretsJson: ${{ env.RepoSecrets }}
 
       - name: Publish artifacts  
         uses: actions/upload-artifact@v3.1.0
@@ -120,7 +122,7 @@ jobs:
           
       - name: Publish Release
         id: PublishRelease
-        uses: ciellosinc/FSC-PS-Actions/PublishRelease@v1.1   
+        uses: fscpscollaborative/fscps.gh/PublishRelease@v2.1   
         with:
           type: ${{ needs.Initialization.outputs.type}}
           settingsJson: ${{ env.Settings }}
@@ -129,15 +131,15 @@ jobs:
 
            
   CreateReleaseBranch:
-    if: ${{ github.event.inputs.createReleaseBranch=='Y' }}
+    if: ${{ github.event.inputs.createReleaseBranch == 'true' }}
     runs-on: ${{ fromJson(needs.Initialization.outputs.githubRunner) }}
     needs: [ Initialization, CreateRelease ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       - name: Read settings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
 
       - name: Create Release Branch
         run: |
@@ -149,18 +151,18 @@ jobs:
 
 
   PostProcess:
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ${{ fromJson(needs.Initialization.outputs.githubRunner) }}
     needs: [ Initialization, CreateRelease, CreateReleaseBranch ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       - name: Read settings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
 
       - name: Read secrets
-        uses: ciellosinc/FSC-PS-Actions/ReadSecrets@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}    
         with:
@@ -168,8 +170,8 @@ jobs:
           
       - name: Finalize the workflow
         id: PostProcess
-        uses: ciellosinc/FSC-PS-Actions/WorkflowPostProcess@v1.1
+        uses: fscpscollaborative/fscps.gh/WorkflowPostProcess@v2.1
         with:
           remove_current: ${{ needs.Initialization.outputs.environments == '' }}
           settingsJson: ${{ env.Settings }}
-          SecretsJson: ${{ env.RepoSecrets }}
+          secretsJson: ${{ env.RepoSecrets }}
