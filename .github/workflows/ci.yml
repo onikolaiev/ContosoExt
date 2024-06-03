@@ -22,49 +22,50 @@ defaults:
 
 jobs:
    CI:
-    runs-on: [ windows-latest ]
+    runs-on: [windows-latest]
     name: Gated Build
     steps:
       - name: Support longpaths
         run: git config --system core.longpaths true
         
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       - name: Initialize the workflow
-        uses: ciellosinc/FSC-PS-Actions/WorkflowInitialize@v1.1
+        uses: fscpscollaborative/fscps.gh/WorkflowInitialize@v2.1
         id: init
         env:
           secrets: ${{ toJson(secrets) }}    
 
       - name: Read settings
         id: ReadSettings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
 
       - name: Read secrets
-        uses: ciellosinc/FSC-PS-Actions/ReadSecrets@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}    
         with:
           settingsJson: ${{ env.Settings }}
 
       - name: Check for updates to FSC-PS system files
-        uses: ciellosinc/FSC-PS-Actions/CheckForUpdates@v1.1
+        uses: fscpscollaborative/fscps.gh/CheckForUpdates@v2.1
+        continue-on-error: true
         with:
           type: ${{ steps.ReadSettings.outputs.type }}
           settingsJson: ${{ env.Settings }}
-          SecretsJson: ${{ env.RepoSecrets }}
+          secretsJson: ${{ env.RepoSecrets }}
         
       - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Setup NuGet
-        uses: nuget/setup-nuget@v1.1.1
+        uses: nuget/setup-nuget@v2.0.0
         with:
           nuget-version: 5.10.x    
           
       - name: Run pipeline
-        uses: ciellosinc/FSC-PS-Actions/RunPipeline@v1.1
+        uses: fscpscollaborative/fscps.gh/RunPipeline@v2.1
         id: runpipeline
         with:
           type: ${{ steps.ReadSettings.outputs.type }}
@@ -73,7 +74,7 @@ jobs:
                    
       - name: Finalize the workflow
         id: PostProcess
-        uses: ciellosinc/FSC-PS-Actions/WorkflowPostProcess@v1.1
+        uses: fscpscollaborative/fscps.gh/WorkflowPostProcess@v2.1
         with:
           remove_current: ${{ steps.ReadSettings.outputs.EnvironmentsJson == '' }}
           settingsJson: ${{ env.Settings }}

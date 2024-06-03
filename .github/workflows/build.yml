@@ -10,12 +10,29 @@ on:
         type: choice
         options:
         - "*"
+        - "10.0.18"
+        - "10.0.19"
+        - "10.0.20"
+        - "10.0.21"
+        - "10.0.22"
+        - "10.0.23"
+        - "10.0.24"
+        - "10.0.25"
         - "10.0.26"
         - "10.0.27"
         - "10.0.28"
         - "10.0.29"
         - "10.0.30"
         - "10.0.31"
+        - "10.0.32"
+        - "10.0.33"
+        - "10.0.34"
+        - "10.0.35"
+        - "10.0.36"
+        - "10.0.37"
+        - "10.0.38"
+        - "10.0.39"
+        - "10.0.40"
 
 
       includeTestModels:
@@ -35,7 +52,7 @@ env:
 
 jobs:
    Initialization:
-    runs-on: [ windows-latest ]
+    runs-on: [windows-latest]
     outputs:
       type: ${{ steps.ReadSettings.outputs.type }}
       source_branch: ${{ steps.ReadSettings.outputs.source_branch }}
@@ -47,26 +64,27 @@ jobs:
         run: git config --system core.longpaths true
         
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       - name: Initialize the workflow
-        uses: ciellosinc/FSC-PS-Actions/WorkflowInitialize@v1.1
+        uses: fscpscollaborative/fscps.gh/WorkflowInitialize@v2.1
         id: init
         env:
           secrets: ${{ toJson(secrets) }}    
 
       - name: Read settings
         id: ReadSettings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
         with:
           version: ${{ inputs.version }}
           
       - name: Check for updates to FSC-PS system files
-        uses: ciellosinc/FSC-PS-Actions/CheckForUpdates@v1.1
+        uses: fscpscollaborative/fscps.gh/CheckForUpdates@v2.1
+        continue-on-error: true
         with:
           type: ${{ steps.ReadSettings.outputs.type }}
           settingsJson: ${{ env.Settings }}
-          SecretsJson: ${{ env.RepoSecrets }}
+          secretsJson: ${{ env.RepoSecrets }}
 
    Build:
     needs: [ Initialization ]
@@ -78,30 +96,30 @@ jobs:
     name: Build ${{ matrix.version }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
       
       - name: Read settings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
         with:
           version: ${{ matrix.version }}
           
       - name: Read secrets
-        uses: ciellosinc/FSC-PS-Actions/ReadSecrets@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}       
         with:
           settingsJson: ${{ env.Settings }}
           
       - name: Setup MSBuild
-        uses: microsoft/setup-msbuild@v1.1
+        uses: microsoft/setup-msbuild@v2
 
       - name: Setup NuGet
-        uses: nuget/setup-nuget@v1.1.1
+        uses: nuget/setup-nuget@v2.0.0
         with:
           nuget-version: 5.10.x    
           
       - name: Run pipeline
-        uses: ciellosinc/FSC-PS-Actions/RunPipeline@v1.1
+        uses: fscpscollaborative/fscps.gh/RunPipeline@v2.1
         id: runpipeline
         with:
           type: ${{ needs.Initialization.outputs.type}}
@@ -116,18 +134,18 @@ jobs:
           path: ${{ env.ARTIFACTS_PATH }}
           
    PostProcess: 
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ${{ fromJson(needs.Initialization.outputs.githubRunner) }}
     needs: [ Initialization,  Build ]
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4.1.1
 
       - name: Read settings
-        uses: ciellosinc/FSC-PS-Actions/ReadSettings@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSettings@v2.1
 
       - name: Read secrets
-        uses: ciellosinc/FSC-PS-Actions/ReadSecrets@v1.1
+        uses: fscpscollaborative/fscps.gh/ReadSecrets@v2.1
         env:
           secrets: ${{ toJson(secrets) }}
         with:
@@ -135,8 +153,8 @@ jobs:
           
       - name: Finalize the workflow
         id: PostProcess
-        uses: ciellosinc/FSC-PS-Actions/WorkflowPostProcess@v1.1
+        uses: fscpscollaborative/fscps.gh/WorkflowPostProcess@v2.1
         with:
           remove_current: ${{ needs.Initialization.outputs.environments == '' }}
           settingsJson: ${{ env.Settings }}
-          SecretsJson: ${{ env.RepoSecrets }}
+          secretsJson: ${{ env.RepoSecrets }}
